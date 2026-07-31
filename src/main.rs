@@ -3,10 +3,11 @@ mod ffi;
 use axum::{
     Json, Router,
     extract::{Path, State},
-    http::StatusCode,
+    http::{Method, StatusCode},
     response::{IntoResponse, Response},
     routing::{get, get_service},
 };
+use axum_governor::{GovernorConfigBuilder, GovernorLayer, Quota, extractor::PeerIp, nz};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
@@ -42,11 +43,10 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         match self {
             AppError::NotFound => (StatusCode::NOT_FOUND, "404: mazafaka").into_response(),
-            AppError::Db(e) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("db fucked up: {e}"),
-            )
-                .into_response(),
+            AppError::Db(e) => {
+                eprintln!("db fucked up: {e}");
+                (StatusCode::INTERNAL_SERVER_ERROR, "500: internal").into_response()
+            }
         }
     }
 }
@@ -81,7 +81,7 @@ async fn хрень_get(
         .await?;
     return Ok(Json(stacy))
 }
-
+// TODO: cache finals&static/
 async fn хрень_post(
     State(pool): State<SqlitePool>,
     Json(payload): Json<пейлоад>,
@@ -132,11 +132,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/%D1%85%D1%80%D0%B5%D0%BD%D1%8C/{id}", get(хрень_single_get))
         .route("/blackbeard", get_service(ServeFile::new("static/blackbread.html")))
         .fallback_service(ServeDir::new("static/"))     // сомнительная хрень(надо делать / -> ServeDir())
+        .layer(GovernorLayer::new(
+            GovernorConfigBuilder::default()
+                .with_extractor(PeerIp::default())
+                .expect_connect_info()
+                .quota_default(Quota::requests_per_minute(nz!(10u32)))
+                .quota_for(Method::POST, Quota::requests_per_minute(nz!(2u32)))
+                .finish()
+                .expect("governor config"),
+        ))
         .with_state(pool);
 
     axum::serve(
         tokio::net::TcpListener::bind("0.0.0.0:3000").await?,
-        app)
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>())
     .await?;
 
     Ok(())
