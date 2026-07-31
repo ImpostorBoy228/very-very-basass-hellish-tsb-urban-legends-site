@@ -144,7 +144,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_state(pool);
 
     axum::serve(
-        tokio::net::TcpListener::bind("0.0.0.0:3000").await?,
+        tokio::net::TcpListener::bind("127.0.0.1:6234").await?,
         app.into_make_service_with_connect_info::<std::net::SocketAddr>())
     .await?;
 
