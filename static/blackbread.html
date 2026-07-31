@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Write shit</title>
+        <style>
+
+        body {
+            background-color: #000000;
+            color: #e0e0e0;
+            font-family:
+                system-ui,
+                -apple-system,
+                sans-serif;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        nav {
+            display: flex;
+        }
+        nav a {
+            color: #8ab4f8;
+            margin-right: 1rem;
+        }
+        nav a img {
+            width: 1.5em;
+            height: 1.5em;
+            vertical-align: middle;
+            margin-right: 0.25rem;
+        }
+        label,
+        input,
+        textarea {
+            display: block;
+            margin-top: 1rem;
+        }
+        button {
+            display: block;
+            margin-top: 0.2rem;
+        }
+        label {
+            color: #ffffff;
+            font-size: 0.9rem;
+        }
+        </style>
+    </head>
+    <body>
+        <nav>
+            <a href="https://impostorboy.ru" id="about-dev">About Dev</a>
+            <a href="/">Main</a>
+            <a href="/blackbeard" style="margin-left: auto"><img src="/bb.png" alt="lol why your cursor stuck at..." />Lets write like blackbeard</a>
+        </nav>
+        <hr />
+        <h2>Write shit here</h2>
+        <form id="form">
+            <label for="причина">Что</label>
+            <input type="text" id="причина" name="причина" required />
+            <label for="базар">Базар</label>
+            <textarea id="базар" name="базар" rows="10" required></textarea>
+            <button type="submit" id="submit">Submit</button>
+            <p id="error" hidden></p>
+        </form>
+
+        <script>
+            const form = document.getElementById("form");
+            const submit = document.getElementById("submit");
+            const error = document.getElementById("error");
+
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                error.hidden = true;
+                submit.disabled = true;
+
+                const payload = {
+                    причина: document.getElementById("причина").value,
+                    базар: document.getElementById("базар").value,
+                };
+
+                try {
+                    const res = await fetch("/api/хрень", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    });
+                    if (!res.ok) throw new Error(`server said: ${res.status}`);
+                    window.location.href = "/";
+                } catch (err) {
+                    error.textContent = `fuck, didn't write: ${err.message}`;
+                    error.hidden = false;
+                    submit.disabled = false;
+                }
+            });
+        </script>
+    </body>
+</html>

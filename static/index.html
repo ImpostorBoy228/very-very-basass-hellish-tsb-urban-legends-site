@@ -1,109 +1,153 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ImpostorBoy</title>
-<style>
-    body {
-        background-color: #000000;
-        color: #e0e0e0;
-        font-family: system-ui, -apple-system, sans-serif;
-        max-width: 720px;
-        margin: 0 auto;
-        padding: 1rem;
-    }
-    nav a {
-        color: #8ab4f8;
-        margin-right: 1rem;
-    }
-    h2 {
-        color: #ffd700;
-    }
-    .post {
-        background-color: #ffffff;
-        color: #000000;
-        padding: 1rem;
-        margin: 1rem 0;
-        border-radius: 8px;
-    }
-    .rizzon, .its, .id_, .bazar {
-        color: #000000;
-    }
-    .rizzon {
-        margin: 0 0 0.25rem 0;
-    }
-    .its, .id_ {
-        color: #8c8c8c;
-        margin: 0 0 0.5rem 0;
-    }
-    .bazar {
-        margin: 0;
-        white-space: pre-wrap;
-    }
-    .id_ {
-        margin-left: 0.5rem;
-    }
-</style>
-</head>
-<body>
-     <nav>
-     <a href="https://impostorboy.ru" id="about-dev">About Dev</a> <a href=/>Main</a>
-     </nav>
-	<hr>
-	<h2>Fucking Urban Legends</h2>
-	<div id="posts"></div>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ImpostorBoy</title>
+        <style>
+            body {
+                background-color: #000000;
+                color: #e0e0e0;
+                font-family:
+                    system-ui,
+                    -apple-system,
+                    sans-serif;
+                margin: 0 auto;
+                padding: 1rem;
+            }
+            nav {
+                display: flex;
+            }
+            nav a {
+                color: #8ab4f8;
+                margin-right: 1rem;
+            }
+            nav a img {
+                width: 1.5em;
+                height: 1.5em;
+                vertical-align: middle;
+                margin-right: 0.25rem;
+            }
+            h2 {
+                color: #ffffff;
+            }
+            .post {
+                background-color: #ffffff;
+                color: #000000;
+                padding: 1rem;
+                margin: 1rem 0;
+            }
+            .rizzon,
+            .its,
+            .id_,
+            .bazar {
+                color: #000000;
+            }
+            .rizzon {
+                margin: 0;
+            }
+            .post-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                margin: 0 0 0.25rem 0;
+            }
+            .post-meta {
+                display: flex;
+                align-items: baseline;
+            }
+            .its,
+            .id_ {
+                margin: 0 0 0.5rem 0;
+            }
+            .its {
+                color: #8c8c8c;
+            }
+            .bazar {
+                margin: 0;
+                white-space: pre-wrap;
+            }
+            .id_ {
+                color: #000000;
+                margin-left: 0.5rem;
+                margin-right: 0.25rem;
+            }
+        </style>
+    </head>
+    <body>
+        <nav>
+            <a href="https://impostorboy.ru" id="about-dev">About Dev</a>
+            <a href="/">Main</a>
+            <a href="/blackbeard" style="margin-left: auto"><img src="/bb.png" alt="lol why your cursor stuck at..." />Lets write like blackbeard</a>
+        </nav>
+        <hr />
+        <h2>Fucking Urban Legends</h2>
+        <div id="posts"></div>
 
-<script>
-function formatITS(ns) {
-    const totalNs = BigInt(ns);
-    const Y = BigInt(147) * BigInt(86400) * BigInt(1000000000);
-    const M = BigInt(21) * BigInt(86400) * BigInt(1000000000);
-    const D = BigInt(86400) * BigInt(1000000000);
-    const H = BigInt(3600) * BigInt(1000000000);
-    const m = BigInt(60) * BigInt(1000000000);
-    let r = totalNs;
-    const y = r / Y; r %= Y;
-    const mo = r / M; r %= M;
-    const d = r / D; r %= D;
-    const h = r / H; r %= H;
-    const mi = r / m; r %= m;
-    const s = r / BigInt(1000000000);
-    return `${y}y ${mo}m ${d}d ${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-}
+        <script>
+            function formatITS(ns) {
+                const totalNs = BigInt(ns);
+                const Y = BigInt(147) * BigInt(86400) * BigInt(1000000000);
+                const M = BigInt(21) * BigInt(86400) * BigInt(1000000000);
+                const D = BigInt(86400) * BigInt(1000000000);
+                const H = BigInt(3600) * BigInt(1000000000);
+                const m = BigInt(60) * BigInt(1000000000);
+                let r = totalNs;
+                const y = r / Y;
+                r %= Y;
+                const mo = r / M;
+                r %= M;
+                const d = r / D;
+                r %= D;
+                const h = r / H;
+                r %= H;
+                const mi = r / m;
+                r %= m;
+                const s = r / BigInt(1000000000);
+                return `${y}y ${mo}m ${d}d ${String(h).padStart(2, "0")}:${String(mi).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+            }
 
-async function loadEntrys() {
-    const res = await fetch('/api/хрень');
-    if (!res.ok) return;
-    const emmm = await res.json();
-    const posts = document.getElementById('posts');
-    posts.innerHTML = '';
-    for (const m of emmm) {
-        const div = document.createElement('div');
-        div.className = 'post';
+            async function loadEntrys() {
+                const res = await fetch("/api/хрень");
+                if (!res.ok) return;
+                const emmm = await res.json();
+                const posts = document.getElementById("posts");
+                posts.innerHTML = "";
+                for (const m of emmm) {
+                    const div = document.createElement("div");
+                    div.className = "post";
 
-        const title = document.createElement('h4');
-        title.className = 'rizzon';
-        title.textContent = m.title;
+                    const title = document.createElement("h4");
+                    title.className = "rizzon";
+                    title.textContent = m.title;
 
-        const id_ = document.createElement('span');
-        id_.className = 'id_';
-        id_.textContent = `#${m.id}`;
+                    const id_ = document.createElement("span");
+                    id_.className = "id_";
+                    id_.textContent = `#${m.id}`;
 
-        const its = document.createElement('span');
-        its.className = 'its';
-        its.textContent = formatITS(m.nsecs);
+                    const its = document.createElement("span");
+                    its.className = "its";
+                    its.textContent = formatITS(m.nsecs);
 
-        const content = document.createElement('p');
-        content.className = 'bazar';
-        content.textContent = m.content;
+                    const header = document.createElement("div");
+                    header.className = "post-header";
 
-        div.append(title, ' ', id_, ' ', its, content);
-        posts.appendChild(div);
-    }
-}
+                    const meta = document.createElement("span");
+                    meta.className = "post-meta";
+                    meta.append(id_, its);
 
-loadEntrys();
-</script>
-</body>
+                    header.append(title, meta);
+
+                    const content = document.createElement("p");
+                    content.className = "bazar";
+                    content.textContent = m.content;
+
+                    div.append(header, content);
+                    posts.appendChild(div);
+                }
+            }
+
+            loadEntrys();
+        </script>
+    </body>
 </html>

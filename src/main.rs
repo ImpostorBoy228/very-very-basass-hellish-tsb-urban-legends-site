@@ -5,13 +5,13 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::get,
+    routing::{get, get_service},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use std::str::FromStr;
-use tower_http::services::ServeDir;
+use tower_http::services::{ServeDir, ServeFile};
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct Entry {
@@ -41,10 +41,10 @@ impl From<sqlx::Error> for AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         match self {
-            AppError::NotFound => (StatusCode::NOT_FOUND, "не найдено").into_response(),
+            AppError::NotFound => (StatusCode::NOT_FOUND, "404: mazafaka").into_response(),
             AppError::Db(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("база сломалась: {e}"),
+                format!("db fucked up: {e}"),
             )
                 .into_response(),
         }
@@ -76,7 +76,7 @@ fn format_its() -> String {
 async fn хрень_get(
     State(pool): State<SqlitePool>,
 ) -> Result<Json<Vec<Entry>>, AppError> {
-    let stacy = sqlx::query_as::<_, Entry>("SELECT id, reazon AS title, bazar AS content, COALESCE(time, 0) AS nsecs FROM entrys")
+    let stacy = sqlx::query_as::<_, Entry>("SELECT id, reazon AS title, bazar AS content, COALESCE(time, 0) AS nsecs FROM entrys ORDER BY id DESC")
         .fetch_all(&pool)
         .await?;
     return Ok(Json(stacy))
@@ -130,6 +130,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new()
         .route("/api/%D1%85%D1%80%D0%B5%D0%BD%D1%8C", get(хрень_get).post(хрень_post))
         .route("/api/%D1%85%D1%80%D0%B5%D0%BD%D1%8C/{id}", get(хрень_single_get))
+        .route("/blackbeard", get_service(ServeFile::new("static/blackbread.html")))
         .fallback_service(ServeDir::new("static/"))     // сомнительная хрень(надо делать / -> ServeDir())
         .with_state(pool);
 
