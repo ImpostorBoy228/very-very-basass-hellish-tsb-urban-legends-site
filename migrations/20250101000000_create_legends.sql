@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS entrys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reazon TEXT NOT NULL,
+    bazar TEXT NOT NULL,
+    time INTEGER
+);
