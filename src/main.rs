@@ -2,8 +2,9 @@ mod ffi;
 
 use axum::{
     Json, Router,
-    extract::{DefaultBodyLimit, Path, State},
-    http::StatusCode,
+    extract::{DefaultBodyLimit, Path, Request, State},
+    http::{StatusCode, header},
+    middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::{get, get_service},
 };
@@ -29,6 +30,31 @@ pub struct пейлоад {
 
 const MAXRIZZ: usize = 200;
 const MAXBZZ: usize = 5000;
+
+const IMG_CACHE: &str = "public, max-age=604800, immutable";
+
+async fn img_cache(req: Request, next: Next) -> Response {
+    let is_img = req
+        .uri()
+        .path()
+        .rsplit('.')
+        .next()
+        .map(|ext| {
+            matches!(
+                ext.to_ascii_lowercase().as_str(),
+                "png" | "jpg" | "jpeg" | "webp" | "gif" | "svg" | "ico" | "avif"
+            )
+        })
+        .unwrap_or(false);
+    let mut res = next.run(req).await;
+    if is_img {
+        res.headers_mut().insert(
+            header::CACHE_CONTROL,
+            header::HeaderValue::from_static(IMG_CACHE),
+        );
+    }
+    res
+}
 
 pub enum AppError {
     Db(sqlx::Error),
@@ -144,6 +170,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/blackbeard", get_service(ServeFile::new("static/blackbread.html")))
         .fallback_service(ServeDir::new("static/"))     // сомнительная хрень(надо делать / -> ServeDir())
         .layer(DefaultBodyLimit::max(16 * 1024))
+        .layer(middleware::from_fn(img_cache))
         .with_state(pool);
 
     axum::serve(
