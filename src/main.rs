@@ -2,12 +2,11 @@ mod ffi;
 
 use axum::{
     Json, Router,
-    extract::{Path, State},
-    http::{Method, StatusCode},
+    extract::{DefaultBodyLimit, Path, State},
+    http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, get_service},
 };
-use axum_governor::{GovernorConfigBuilder, GovernorLayer, Quota, extractor::PeerIp, nz};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
@@ -28,9 +27,13 @@ pub struct пейлоад {
     pub базар: String,
 }
 
+const MAXRIZZ: usize = 200;
+const MAXBZZ: usize = 5000;
+
 pub enum AppError {
     Db(sqlx::Error),
     NotFound,
+    TooLong,
 }
 
 impl From<sqlx::Error> for AppError {
@@ -43,6 +46,9 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         match self {
             AppError::NotFound => (StatusCode::NOT_FOUND, "404: mazafaka").into_response(),
+            AppError::TooLong => {
+                (StatusCode::PAYLOAD_TOO_LARGE, "413: мужчина, ебать у вас фимоз").into_response()
+            }
             AppError::Db(e) => {
                 eprintln!("db fucked up: {e}");
                 (StatusCode::INTERNAL_SERVER_ERROR, "500: internal").into_response()
@@ -86,6 +92,11 @@ async fn хрень_post(
     State(pool): State<SqlitePool>,
     Json(payload): Json<пейлоад>,
 ) -> Result<Json<Entry>, AppError> {
+    if payload.причина.chars().count() > MAXRIZZ
+        || payload.базар.chars().count() > MAXBZZ
+    {
+        return Err(AppError::TooLong);
+    }
     let now: i64 = ffi::current_nsecs().try_into().unwrap_or(i64::MAX);
     let goddamn = sqlx::query_as::<_, Entry>("INSERT INTO entrys (reazon, bazar, time) VALUES (?, ?, ?) RETURNING id, reazon AS title, bazar AS content, COALESCE(time, 0) AS nsecs")
     .bind(&payload.причина)
@@ -132,20 +143,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/%D1%85%D1%80%D0%B5%D0%BD%D1%8C/{id}", get(хрень_single_get))
         .route("/blackbeard", get_service(ServeFile::new("static/blackbread.html")))
         .fallback_service(ServeDir::new("static/"))     // сомнительная хрень(надо делать / -> ServeDir())
-        .layer(GovernorLayer::new(
-            GovernorConfigBuilder::default()
-                .with_extractor(PeerIp::default())
-                .expect_connect_info()
-                .quota_default(Quota::requests_per_minute(nz!(10u32)))
-                .quota_for(Method::POST, Quota::requests_per_minute(nz!(2u32)))
-                .finish()
-                .expect("governor config"),
-        ))
+        .layer(DefaultBodyLimit::max(16 * 1024))
         .with_state(pool);
 
     axum::serve(
         tokio::net::TcpListener::bind("127.0.0.1:6234").await?,
-        app.into_make_service_with_connect_info::<std::net::SocketAddr>())
+        app.into_make_service())
     .await?;
 
     Ok(())
